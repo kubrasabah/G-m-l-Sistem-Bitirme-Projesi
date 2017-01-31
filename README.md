@@ -1,1 +1,0 @@
-# G-m-l-Sistem-Bitirme-Projesi
