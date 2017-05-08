@@ -1,0 +1,163 @@
+#include <Servo.h>
+
+#define ag_ismi "busra"
+#define ag_sifresi "busra123"
+
+#define trigPin  12  //Sensorun trig pini Arduinonun 6 numaralı ayağına bağlandı 
+#define echoPin  11   //Sensorun echo pini Arduinonun 7 numaralı ayağına bağlandı 
+
+Servo myservo;
+int pos = 0;
+int ledred= 3;
+int ledblue = 4;
+int ledgreen = 5;
+int ledyellow = 6;
+
+
+long microsaniyeSure, uzaklik; // Mesafe hesabında kullanılan değişkenler
+void setup()
+{ 
+  myservo.attach (9);
+  pinMode(trigPin, OUTPUT); /* trig pini çıkış olarak ayarlandı */
+  pinMode(echoPin,INPUT); /* echo pini giriş olarak ayarlandı */
+  Serial.begin(115200); //Seriport'u açıyoruz. Güncellediğimiz 
+                        //ESP modülünün baudRate değeri 115200 olduğu için bizde Seriport'u 115200 şeklinde seçiyoruz
+  Serial.println("AT"); //ESP modülümüz ile bağlantı kurulup kurulmadığını kontrol ediyoruz.
+  
+  delay(3000); //ESP ile iletişim için 3 saniye bekliyoruz.
+ 
+  if(Serial.find("OK")){         //esp modülü ile bağlantıyı kurabilmişsek modül "AT" komutuna "OK" komutu ile geri dönüş yapıyor.
+     Serial.println("AT+CWMODE=1"); //esp modülümüzün WiFi modunu STA şekline getiriyoruz. Bu mod ile modülümüz başka ağlara bağlanabilecek.
+     delay(2000);
+     String baglantiKomutu=String("AT+CWJAP=\"")+ag_ismi+"\",\""+ag_sifresi+"\"";
+    Serial.println(baglantiKomutu);
+    
+     delay(5000);
+ }
+ 
+   Serial.print("AT+CIPMUX=1\r\n"); //modülümüzü TCP/UDP bağlantısına sokuyoruz.
+   delay(200);
+   Serial.print("AT+CIPSERVER=1,80\r\n"); //Sunucumuzu 80 portunda açıyoruz
+   delay(1000);
+}
+
+void loop(){
+ for(pos = 0; pos <= 180; pos += 45) // 0 ile 180 derece arası 15'er
+  {                                   // derece artarak ileriliyor    
+    myservo.write(pos);  
+      mesafe_olc();
+
+    if (uzaklik>0 && uzaklik <10)
+  {
+    digitalWrite(ledred, HIGH);
+    digitalWrite(ledgreen, LOW);
+    digitalWrite(ledyellow, LOW);
+    digitalWrite(ledblue, LOW);
+  }
+   if (uzaklik>10 && uzaklik <30)
+  {
+    digitalWrite(ledred, LOW);
+    digitalWrite(ledgreen, LOW);
+    digitalWrite(ledyellow, HIGH);
+    digitalWrite(ledblue, LOW);
+  }
+     if (uzaklik>30 && uzaklik <50)
+  {
+    digitalWrite(ledred, LOW);
+    digitalWrite(ledgreen, HIGH);
+    digitalWrite(ledyellow, LOW);
+    digitalWrite(ledblue, LOW);
+  }
+     if (uzaklik>50)
+  {
+    digitalWrite(ledred, LOW);
+    digitalWrite(ledgreen, LOW);
+    digitalWrite(ledyellow, LOW);
+    digitalWrite(ledblue, HIGH);
+  }               
+    delay(500);                        
+  } 
+  for(pos = 180; pos>=0; pos-=45)     // 180 ile 0 derece arası 15'er
+  {                                   // derece azalarak ilerliyor
+    myservo.write(pos); 
+      mesafe_olc();
+           
+    if (uzaklik>0 && uzaklik <10)
+  {
+    digitalWrite(ledred, HIGH);
+    digitalWrite(ledgreen, LOW);
+    digitalWrite(ledyellow, LOW);
+    digitalWrite(ledblue, LOW);
+  }
+   if (uzaklik>10 && uzaklik <30)
+  {
+    digitalWrite(ledred, LOW);
+    digitalWrite(ledgreen, LOW);
+    digitalWrite(ledyellow, HIGH);
+    digitalWrite(ledblue, LOW);
+  }
+     if (uzaklik>30 && uzaklik <50)
+  {
+    digitalWrite(ledred, LOW);
+    digitalWrite(ledgreen, HIGH);
+    digitalWrite(ledyellow, LOW);
+    digitalWrite(ledblue, LOW);
+  }
+     if (uzaklik>50)
+  {
+    digitalWrite(ledred, LOW);
+    digitalWrite(ledgreen, LOW);
+    digitalWrite(ledyellow, LOW);
+    digitalWrite(ledblue, HIGH);
+  }
+    delay(500);                       
+                                   
+  }        
+  
+  
+  mesafe_yolla();
+} 
+void mesafe_yolla()
+{
+
+  String veri = String(uzaklik);
+  if(Serial.available()>0){  //Eğer gelen veri varsa gir
+    if(Serial.find("+IPD,")){  //Gelen verinin içerisinde "+IPD" komutu geçiyorsa gir
+      String veri = String(uzaklik);
+      String metin = "<head>"+veri+"</head>";   // Sunucuya yazdırılacak yazı
+      String yollanacak_komut = "AT+CIPSEND=";  //yollayacağımız komutun boyutunu söylediğimiz kısım.
+      yollanacak_komut +="0";
+      yollanacak_komut +=",";
+      yollanacak_komut += metin.length(); //yollayacağımız yazının uzunluğunu belirliyor.
+      yollanacak_komut += "\r\n";
+      Serial.print(yollanacak_komut);
+      delay(500);
+      Serial.println(metin);
+      delay(1000);
+      Serial.println("AT+CIPCLOSE=0"); //Server'ı kapatıyoruz.
+    }
+  }
+}
+
+
+
+void mesafe_olc() {
+/* Aşağıda trigPin/echoPin döngüsü en yakın nesneden yansıyan sesin yansıma süresini hesaplar. */ 
+ digitalWrite(trigPin, LOW); // Hoparlör 2ms sessiz
+ delayMicroseconds(2); 
+
+ digitalWrite(trigPin, HIGH); // Hoparlör 10ms sesli
+ delayMicroseconds(10); 
+ 
+ digitalWrite(trigPin, LOW); // Hoparlör sessiz
+ microsaniyeSure = pulseIn(echoPin, HIGH); // Mikrofonu dinle, yansıma süresini microsaniyeSure değişkenine al
+ 
+// Serial.println(microsaniyeSure); // Sesin gitme ve geri yansıma süresi 
+
+ uzaklik = microsaniyeSure/58.3; // microsaniyeSure'dan cm olarak mesafeyi hesapla
+ 
+ Serial.print(uzaklik); //Mesafe bilgisi
+ Serial.println(" cm"); // Birim değeri
+ delay(50);  //Sonraki ölçümden önce bekleme süresi. 
+ 
+}
