@@ -1,0 +1,39 @@
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+
+from threading import Thread
+import gtk, os, gobject, time
+
+class PyApp(gtk.Window):
+	def __init__(self):
+		gtk.Window.__init__(self)
+		self.set_default_size(300, 200)
+		self.set_title("Radaar!")
+		self.connect('delete-event', gtk.main_quit)
+
+		self.label = gtk.Label("")
+		self.add(self.label)
+		self.show_all()
+		gobject.timeout_add_seconds(1, self.threaded)
+
+	def threaded(self):
+		thread = Thread(target=self.update)
+		thread.start()
+		return True
+
+	def update(self):
+		os.system("curl http://192.168.43.216>dosya.html")
+		os.system("sed -i 's|<head>||' dosya.html")
+		os.system("sed -i 's|</head>||' dosya.html")
+		a=open("dosya.html","r").read()
+		n=str(self.label.get_text())
+		gobject.idle_add(self.label.set_text, str(a))
+
+	def main(self):
+		gobject.threads_init()
+		gtk.main()
+		time.sleep(3)
+
+if __name__ == '__main__':
+    PyApp().main()  
+
