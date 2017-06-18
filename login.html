@@ -1,0 +1,21 @@
+<ion-modal-view>
+  <ion-header-bar>
+    <h1 class="title">Giriş</h1>
+    <div class="buttons">
+      <button class="button button-clear" ng-click="closeLogin()">Çıkış</button>
+    </div>
+  </ion-header-bar>
+  <ion-content>
+    <form ng-submit="login(loginData)">
+      <div class="list">
+        <label class="item item-input">
+          <span class="input-label">İp Adresi</span>
+          <input type="text" ng-model="loginData.ip">
+        </label>
+        <label class="item">
+          <button class="button button-block button-positive" type="submit">Konsola Geç</button>
+        </label>
+      </div>
+    </form>
+  </ion-content>
+</ion-modal-view>
